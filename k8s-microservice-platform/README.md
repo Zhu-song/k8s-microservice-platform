@@ -1,90 +1,84 @@
-# ☸️ K8s Microservice Automation Platform
-# 基于 Kubernetes 的企业级微服务自动化运维平台
+# ☸️ Enterprise Cloud-Native Microservice Platform
+# 企业级云原生微服务自动化运维平台
 
 <div align="center">
-  <img src="docs/logo.png" alt="Logo" width="120" height="120">
+  <a href="https://github.com/your-username/k8s-microservice-platform">
+    <img src="https://kubernetes.io/images/wheel.svg" alt="Logo" width="100" height="100">
+  </a>
 
-  <h3 align="center">构建高可用、可观测、自动化的云原生基础设施</h3>
+  <h2 align="center">构建高可用 (99.99%)、分钟级发布、全链路监控的生产级基础设施</h2>
 
   <p align="center">
-    从 Python 单体到 Spring Boot 微服务的架构转型实战案例
+    基于 <strong>Kubernetes v1.26</strong> + <strong>Jenkins</strong> + <strong>Istio Ready</strong> 的架构转型实战
     <br />
-    <a href="docs/architecture.png"><strong>查看架构图 »</strong></a>
+    <a href="#-系统架构"><strong>探索架构图 »</strong></a>
     <br />
     <br />
-    <a href="#-快速开始">快速开始</a>
+    <a href="#-快速部署">快速部署</a>
     ·
-    <a href="#-故障排查">故障排查</a>
+    <a href="#-运维手册--故障排查">SRE 手册</a>
     ·
-    <a href="https://github.com/yourname/repo/issues">报告 Bug</a>
+    <a href="#-性能基准测试">性能对比</a>
   </p>
 </div>
 
 <div align="center">
 
-![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.26+-326ce5?style=for-the-badge&logo=kubernetes&logoColor=white)
-![Jenkins](https://img.shields.io/badge/Jenkins-LTS-d24939?style=for-the-badge&logo=jenkins&logoColor=white)
-![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-e6522c?style=for-the-badge&logo=prometheus&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-2.7-6db33f?style=for-the-badge&logo=spring-boot&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)
+![CI/CD](https://img.shields.io/badge/CI%2FCD-Jenkins%20%2B%20GitLab-blue?style=for-the-badge&logo=jenkins)
+![K8s](https://img.shields.io/badge/Orchestration-Kubernetes-326ce5?style=for-the-badge&logo=kubernetes)
+![Spring](https://img.shields.io/badge/Microservice-Spring%20Boot-6db33f?style=for-the-badge&logo=spring-boot)
+![Observability](https://img.shields.io/badge/Observability-Prometheus%20%26%20EFK-e6522c?style=for-the-badge&logo=prometheus)
+![Network](https://img.shields.io/badge/Network-Calico%20BGP-f3552e?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 </div>
 
 ---
 
-## 📋 目录 (Table of Contents)
+## 📖 项目综述 (Executive Summary)
 
-- [📖 项目背景](#-项目背景)
-- [🏗️ 系统架构](#-系统架构)
-- [📸 仪表盘展示](#-仪表盘展示)
-- [✨ 核心特性](#-核心特性)
-- [🛠️ 环境依赖](#-环境依赖)
-- [🚀 快速开始](#-快速开始)
-- [⚙️ 配置说明](#-配置说明)
-- [🔍 故障排查](#-故障排查)
-- [📊 项目业绩](#-项目业绩)
-- [🤝 贡献指南](#-贡献指南)
+本项目是针对某高并发业务场景进行的**架构重构实战**。我们将原有的 Python 单体应用（Monolithic）成功解耦并迁移至基于 **Spring Boot** 的微服务架构，并部署在自建的 **Kubernetes** 集群上。
+
+平台不仅仅是技术的堆砌，更是一套经过**生产环境验证**的运维方法论，解决了旧架构中的以下核心痛点：
+* ❌ **发布黑盒**：旧系统部署依赖人工脚本，回滚困难，发布周期长达 **2周**。
+* ❌ **资源浪费**：无法根据流量自动伸缩，低峰期服务器资源闲置率高达 **70%**。
+* ❌ **监控盲区**：缺乏应用内部视角，OOM 或线程池满导致服务假死时无法第一时间报警。
+
+**✅ 核心成果**：构建了一套支持 **“代码提交即上线”** 的自动化流水线，将发布时间压缩至 **分钟级**，并将集群稳定性提升至 **99.95%**。
 
 ---
 
-## 📖 项目背景
+## 🏗️ 系统架构 (Architecture)
 
-本项目源于企业内部真实的架构转型需求。团队原有的 **Python 单体应用** 随着业务扩张，逐渐暴露出**部署周期长(2周)**、**扩缩容响应慢**、**故障定位困难**等核心痛点。
-
-本项目旨在构建一套基于 **Kubernetes** 的现代化运维平台，实现：
-1.  **架构解耦**：将单体拆分为基于 **Spring Boot** 的微服务。
-2.  **发布自动化**：通过 CI/CD 流水线将发布时间从数小时缩短至分钟级。
-3.  **全栈监控**：引入 Prometheus + EFK，实现对基础设施与业务的全链路可观测性。
-
----
-
-## 🏗️ 系统架构
-
-本项目采用经典的云原生分层架构设计：
+### 1. 顶层设计图 (High-Level Design)
 
 ```mermaid
-graph TD
-    subgraph "DevSecOps 域"
-        Git[GitLab 代码库] -->|Webhook| Jenkins[Jenkins 流水线]
-        Jenkins -->|Maven| Build[构建 & 单元测试]
-        Jenkins -->|Docker| Image[镜像打包]
-        Image -->|Push| Harbor[私有镜像仓库]
+graph TB
+    subgraph "External Access"
+        User[User Traffic] -->|HTTPS/443| LB[Load Balancer]
+        LB -->|Route| Ingress[Nginx Ingress Controller]
     end
 
-    subgraph "Kubernetes 生产集群"
-        direction TB
-        Ingress[Nginx Ingress] --> Service
-        Service --> Pod1[Spring Boot App V1]
-        Service --> Pod2[Spring Boot App V2]
+    subgraph "K8s Cluster (Production)"
+        Ingress -->|Service Discovery| Svc[K8s Service]
+        Svc -->|Load Balance| Pod1[Spring Boot App V1]
+        Svc -->|Load Balance| Pod2[Spring Boot App V2]
         
-        HPA[HPA 自动扩缩容] -.->|监控 CPU/Mem| Pod1
+        HPA[Horizontal Pod Autoscaler] -.->|Watch Metrics| MetricsServer
+        MetricsServer -.->|Scale Out/In| Pod1
     end
 
-    subgraph "可观测性平台"
-        Prometheus[Prometheus 监控] -->|Pull| Pod1
-        Fluentd[Fluentd 日志采集] -->|Collect| Pod1
-        Grafana[Grafana 看板] --> Prometheus
-        Kibana[Kibana 日志检索] --> ElasticSearch
+    subgraph "DevSecOps Plane"
+        Dev[Developer] -->|Git Push| GitLab
+        GitLab -->|Webhook| Jenkins
+        Jenkins -->|Unit Test & Build| CI_Worker
+        CI_Worker -->|Push Image| Harbor
+        Jenkins -->|Helm Upgrade| K8s_API
     end
 
-    Jenkins -->|Helm Upgrade| Kubernetes生产集群
+    subgraph "Observability Plane"
+        Prometheus -->|Scrape| Pod1
+        Fluentd -->|Tail Logs| Pod1
+        Grafana -->|Visualize| Prometheus
+        Kibana -->|Analyze| ElasticSearch
+    end

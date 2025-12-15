@@ -84,3 +84,51 @@ graph TD
     Prometheus -->|Pull| K8s
     Fluentd -->|Watch| K8s
     Jenkins -->|Deploy| K8s
+## 🛡️ 3. DevSecOps 安全流水线 (DevSecOps Pipeline)
+
+我们将安全左移（Shift Left Security），在传统的 CI/CD 基础上植入了质量门禁与漏洞扫描，实现了 **DevSecOps** 闭环。
+
+### 3.1 流水线阶段详解 (Pipeline Stages)
+1.  **Checkout**: 拉取 Git 代码（基于 Tag 或 Commit Hash）。
+2.  **SAST (静态分析)**: 使用 **SonarQube** 扫描代码异味与 Bug，未通过质量门禁（如：代码重复率 > 5%）直接阻断。
+3.  **Unit Test**: 运行 Maven/JUnit 测试，输出覆盖率报告。
+4.  **Build**: 编译并构建 Docker 镜像（多阶段构建）。
+5.  **Image Scan**: 使用 **Trivy** 扫描镜像层 CVE 漏洞（高危漏洞阻断发布）。
+6.  **Push**: 推送至 Harbor 私有仓库（已开启内容信任 DCT）。
+7.  **Deploy**: 调用 Helm 进行原子化部署，更新 K8s 集群中的镜像版本。
+8.  **Notification**: 执行结果发送至企业微信/钉钉/飞书。
+
+---
+
+## 📊 4. 容量规划与硬件规格 (Capacity Planning)
+
+基于业务压测数据（单实例 500 QPS），我们对生产环境进行了如下规划，以满足 **10W+ QPS** 的并发需求。
+
+### 4.1 节点规格 (Node Specs)
+| 节点角色 | 数量 | CPU | 内存 | 磁盘 (系统/数据) | 用途 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Master** | 3 | 4 Core | 8 GB | 100GB SSD | 控制面、ETCD、调度器 (不跑业务 Pod) |
+| **Worker** | 5 | 16 Core | 64 GB | 500GB SSD | 承载业务 Pod、中间件、Ingress |
+| **Ops** | 1 | 8 Core | 32 GB | 2TB HDD | 部署 Prometheus TSDB、ELK 日志存储 |
+
+### 4.2 网络规划 (Network CIDR)
+| 网络对象 | CIDR 网段 | 说明 |
+| :--- | :--- | :--- |
+| **VPC / 宿主机** | 192.168.0.0/16 | 物理网络 |
+| **Pod Network** | 172.16.0.0/16 | Calico IPPool，支持 65535 个 Pod |
+| **Service Network** | 10.96.0.0/12 | K8s 内部虚拟 IP |
+
+---
+
+## 🔧 5. 生产级运维手册 (Day 2 Operations)
+
+本手册涵盖了集群交付后的常规运维操作（Day 2 Ops）。
+
+### 5.1 证书轮转 (Certificate Rotation)
+Kubeadm 生成的证书默认有效期为 1 年。我们配置了 Crontab 自动检查：
+```bash
+# 检查证书过期时间
+kubeadm certs check-expiration
+
+# 手动更新所有证书 (Master 节点执行)
+kubeadm certs renew all && systemctl restart kubelet

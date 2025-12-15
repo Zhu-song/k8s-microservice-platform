@@ -69,24 +69,55 @@
 | **平台层** | K8s API, Harbor, Jenkins | 提供调度编排、镜像分发、CI/CD 流水线及配置中心能力。 |
 | **基础层** | Kubeadm, Calico, Ceph/NFS | 提供计算资源池化、扁平化容器网络及分布式存储能力。 |
 
-### 2.2 流量治理与网络架构
-摒弃 Overlay 隧道，采用 **Calico BGP** 模式，实现 Pod IP 在 VPC 内可路由，性能损耗 < 3%。
+### 2.2 流量治理与网络架构 (Traffic & Network)
+
+网络是 K8s 的命脉。本方案摒弃了性能较差的传统 Overlay 隧道封装（如 VXLAN），采用了企业级的 **Calico BGP** 模式，实现 Pod IP 在物理网络中的可路由化，将网络性能损耗降低至 **3%** 以内，同时实施严格的零信任安全策略。
 
 ```mermaid
 graph TD
-    subgraph "南北向流量 (North-South)"
-        Client[外部用户] -->|HTTPS| SLB[负载均衡器]
-        SLB -->|TCP 80/443| Ingress[Nginx Controller]
-        Ingress -->|Route Rule| Svc[K8s Service]
-        Svc -->|Endpoints| Pod[业务容器]
-    end
+  %% 定义样式
+  classDef allowed fill:#e6f4ea,stroke:#1e8e3e,stroke-width:2px;
+  classDef blocked fill:#fce8e6,stroke:#c5221f,stroke-width:2px,stroke-dasharray: 5 5;
+  classDef infra fill:#f1f3f4,stroke:#9aa0a6,stroke-width:1px;
+  classDef k8s fill:#e8f0fe,stroke:#4285f4,stroke-width:1px;
 
-    subgraph "东西向流量 (East-West)"
-        PodA[订单服务] -.->|Direct Route| PodB[库存服务]
-        PodB -.->|NetworkPolicy| PodC[数据库]
-    end
-```
+  subgraph "南北向流量 (North-South Traffic Entrance)"
+      direction TB
+      Client[外部用户]:::allowed -->|HTTPS/443| LB[硬件负载均衡 F5/SLB]:::infra
+      LB -->|TCP LoadBalance| NodePort{NodePort / HostNet}:::infra
+      
+      subgraph "K8s 边缘层"
+          NodePort -->|流量转发| Ingress[Nginx Ingress Controller]:::allowed
+          Ingress o-.->|Watch Service变化| API[K8s API Server]:::k8s
+      end
+      
+      Ingress -->|L7 路由规则| SvcVIP(K8s Service VIP):::k8s
+      SvcVIP -.->|DNAT (iptables/IPVS)| Endpoint[目标 Pod Endpoint]:::allowed
+  end
 
+  subgraph "东西向流量与零信任安全 (East-West & Zero Trust)"
+      direction LR
+      
+      subgraph "Worker Node 1 (192.168.1.10)"
+          PodA[A: 订单服务 Pod (172.16.1.5)]:::allowed
+      end
+      
+      subgraph "Worker Node 2 (192.168.1.11)"
+          PodB[B: 库存服务 Pod (172.16.2.5)]:::allowed
+          PodC[C: 敏感财务数据库]:::blocked
+      end
+      
+      %% 允许的流量：高性能 BGP 路由
+      PodA ==>|Calico BGP 直接路由\n(无 Overlay 隧道封装)| PodB
+      
+      %% 被阻断的流量：网络策略
+      PodA -.->|❌ Deny by NetworkPolicy\n(非白名单访问拒绝)| PodC
+  end
+
+  %% 链接样式调整
+  linkStyle 0,1,2,4,5,7 stroke:#1e8e3e,stroke-width:2px;
+  linkStyle 3,6 stroke:#4285f4,stroke-width:1px,stroke-dasharray: 2 2;
+  linkStyle 8 stroke:#c5221f,stroke-width:2px,stroke-dasharray: 5 5;
 ### 2.3 存储与数据持久化
 针对有状态服务，构建分级存储策略：
 * **Hot Data**: 本地 NVMe SSD (LocalPV)，保障数据库百万级 IOPS。

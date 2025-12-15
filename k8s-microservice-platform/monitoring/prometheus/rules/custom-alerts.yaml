@@ -1,0 +1,22 @@
+groups:
+- name: k8s-microservice.rules
+  rules:
+  # 告警1: Pod 重启风暴 (CrashLoopBackOff)
+  - alert: PodCrashLooping
+    expr: increase(kube_pod_container_status_restarts_total[5m]) > 5
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Pod {{ $labels.pod }} is crashing repeatedly"
+      description: "Pod {{ $labels.pod }} has restarted more than 5 times in 5 minutes."
+
+  # 告警2: 节点 CPU 压力过大
+  - alert: NodeHighCpuLoad
+    expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Node {{ $labels.instance }} CPU load is high"
+      description: "CPU usage is above 80% for more than 5 minutes."

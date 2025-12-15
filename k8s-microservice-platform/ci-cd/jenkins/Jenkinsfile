@@ -1,0 +1,49 @@
+pipeline {
+    agent {
+        kubernetes {
+            // 定义构建 Pod，包含 Docker 和 Helm 工具
+            yamlFile 'ci-cd/jenkins/pod-template.yaml'
+        }
+    }
+    environment {
+        HARBOR_CRED = credentials('harbor-auth-secret')
+        APP_NAME = "demo-service"
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('Unit Test') {
+            steps {
+                container('maven') {
+                    sh 'mvn clean test'
+                }
+            }
+        }
+        stage('Build & Push') {
+            steps {
+                container('docker') {
+                    script {
+                        def imageTag = "v${BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+                        sh "docker build -t harbor.company.com/${APP_NAME}:${imageTag} src/"
+                        sh "echo $HARBOR_CRED_PSW | docker login -u $HARBOR_CRED_USR --password-stdin harbor.company.com"
+                        sh "docker push harbor.company.com/${APP_NAME}:${imageTag}"
+                    }
+                }
+            }
+        }
+        stage('Deploy (Helm)') {
+            steps {
+                container('helm') {
+                    script {
+                        def imageTag = "v${BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
+                        // 滚动更新部署
+                        sh "helm upgrade --install ${APP_NAME} ./deploy/helm-charts/spring-boot-app --set image.tag=${imageTag} --namespace prod"
+                    }
+                }
+            }
+        }
+    }
+}

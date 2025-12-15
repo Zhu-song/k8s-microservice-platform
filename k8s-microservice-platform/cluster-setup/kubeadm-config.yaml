@@ -1,0 +1,25 @@
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
+kubernetesVersion: v1.26.0
+controlPlaneEndpoint: "k8s-api.internal:6443"
+networking:
+  # 必须与 Calico 默认网段一致
+  podSubnet: "192.168.0.0/16"
+  serviceSubnet: "10.96.0.0/12"
+etcd:
+  local:
+    extraArgs:
+      listen-metrics-urls: http://0.0.0.0:2381
+apiServer:
+  extraArgs:
+    authorization-mode: "Node,RBAC"
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: systemd # 生产环境强制要求
+kubeReserved:
+  cpu: "500m"
+  memory: "512Mi"
+systemReserved:
+  cpu: "500m"
+  memory: "512Mi"

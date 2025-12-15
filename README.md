@@ -1,4 +1,3 @@
-# k8s-microservice-platform
 # ☸️ Enterprise Cloud-Native Platform | 企业级云原生 PaaS 平台
 
 <div align="center">
@@ -55,33 +54,33 @@
 
 ## 🏗️ 2. 系统架构 (System Architecture)
 
-本平台采用经典的**云原生分层治理架构**，自下而上实现了基础设施的可编程化、平台服务的标准化以及业务应用的敏捷化。
-
-### 2.1 逻辑架构分层视图 (Layered Architecture)
-
-我们设计了四层架构模型，确保关注点分离（Separation of Concerns）：
-
-| 层级 (Layer) | 核心组件 (Components) | 职责描述 (Description) |
-| :--- | :--- | :--- |
-| **接入层 (Ingress)** | F5 / MetalLB, Nginx Ingress | 负责七层流量卸载、SSL 终结、路由转发及黑白名单控制。 |
-| **服务层 (Service)** | Spring Boot, Istio Sidecar | 承载核心业务逻辑，通过 Sidecar 实现熔断、限流与全链路追踪。 |
-| **平台层 (Platform)** | K8s API, Harbor, Jenkins | 提供调度编排、镜像分发、CI/CD 流水线及配置中心能力。 |
-| **基础层 (Infra)** | Kubeadm, Calico, Ceph/NFS | 提供计算资源池化、扁平化容器网络及分布式存储能力。 |
-
-### 2.2 流量治理与网络架构 (Traffic & Network)
-
-网络是 K8s 的命脉。本方案摒弃了传统的 Overlay 隧道封装，采用 **Calico BGP** 模式实现极致性能。
+### 2.1 逻辑架构图
+采用分层架构设计，确保关注点分离：
 
 ```mermaid
 graph TD
-    subgraph "南北向流量 (North-South Traffic)"
-        Client[外部用户] -->|HTTPS| SLB[负载均衡器]
-        SLB -->|TCP 80/443| Ingress[Nginx Controller]
-        Ingress -->|Route Rule| Svc[K8s Service]
-        Svc -->|Endpoints| Pod[业务容器]
+    User[外部流量] -->|HTTPS| LB[F5/MetalLB]
+    LB -->|TCP| Ingress[Nginx Ingress]
+    
+    subgraph "应用服务层 (Service Mesh)"
+        Ingress -->|Route| SvcA[交易服务]
+        Ingress -->|Route| SvcB[库存服务]
+        SvcA -.->|gRPC| SvcB
     end
 
-    subgraph "东西向流量 (East-West Traffic)"
-        PodA[订单服务] -.->|Direct Route| PodB[库存服务]
-        PodB -.->|NetworkPolicy| PodC[数据库]
+    subgraph "基础设施层 (Infrastructure)"
+        K8s[Kubernetes Cluster]
+        Net[Calico CNI Network]
+        Storage[NFS/Ceph StorageClass]
     end
+
+    subgraph "治理控制面 (Control Plane)"
+        Prometheus[监控告警]
+        Fluentd[日志采集]
+        Jenkins[CI/CD]
+        Harbor[镜像仓库]
+    end
+    
+    Prometheus -->|Pull| K8s
+    Fluentd -->|Watch| K8s
+    Jenkins -->|Deploy| K8s

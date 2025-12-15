@@ -55,38 +55,6 @@
 
 ## 🏗️ 2. 系统架构 (System Architecture)
 
-### 2.1 逻辑架构图
-采用分层架构设计，确保关注点分离：
-
-```mermaid
-graph TD
-    User[外部流量] -->|HTTPS| LB[F5/MetalLB]
-    LB -->|TCP| Ingress[Nginx Ingress]
-    
-    subgraph "应用服务层 (Service Mesh)"
-        Ingress -->|Route| SvcA[交易服务]
-        Ingress -->|Route| SvcB[库存服务]
-        SvcA -.->|gRPC| SvcB
-    end
-
-    subgraph "基础设施层 (Infrastructure)"
-        K8s[Kubernetes Cluster]
-        Net[Calico CNI Network]
-        Storage[NFS/Ceph StorageClass]
-    end
-
-    subgraph "治理控制面 (Control Plane)"
-        Prometheus[监控告警]
-        Fluentd[日志采集]
-        Jenkins[CI/CD]
-        Harbor[镜像仓库]
-    end
-    
-    Prometheus -->|Pull| K8s
-    Fluentd -->|Watch| K8s
-    Jenkins -->|Deploy| K8s
-## 🏗️ 2. 系统架构 (System Architecture)
-
 本平台采用经典的**云原生分层治理架构**，自下而上实现了基础设施的可编程化、平台服务的标准化以及业务应用的敏捷化。
 
 ### 2.1 逻辑架构分层视图 (Layered Architecture)

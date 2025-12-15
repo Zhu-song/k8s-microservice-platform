@@ -11,13 +11,13 @@
     基于 Kubernetes v1.26 • Istio Ready • DevSecOps • FinOps
   </p>
 
-  <p align="center">
-    <a href="#-1-项目综述">项目背景</a> •
-    <a href="#-2-系统架构">架构设计</a> •
-    <a href="#-3-devsecops-流水线">安全流水线</a> •
-    <a href="#-5-生产级运维手册">运维手册</a> •
-    <a href="#-6-部署指南">快速开始</a>
-  </p>
+ <p align="center">
+  <a href="#part-1">项目背景</a> •
+  <a href="#part-2">架构设计</a> •
+  <a href="#part-3">安全流水线</a> •
+  <a href="#part-5">运维手册</a> •
+  <a href="#part-6">快速开始</a>
+</p>
 </div>
 
 <div align="center">
@@ -38,7 +38,7 @@
 
 ---
 
-## 📖 1. 项目综述 (Executive Summary)
+## <span id="part-1">📖 1. 项目综述 (Executive Summary)</span>
 
 本项目源于企业真实的架构转型实战。面对业务扩张，团队将原有的 **Python 单体应用** 成功解耦并迁移至基于 **Spring Boot** 的微服务架构。
 
@@ -55,7 +55,7 @@
 
 ---
 
-## 🏗️ 2. 系统架构 (System Architecture)
+## <span id="part-2">🏗️ 2. 系统架构 (System Architecture)</span>
 
 本平台采用经典的**云原生分层治理架构**，自下而上实现了基础设施的可编程化与业务应用的敏捷化。
 
@@ -140,7 +140,7 @@ sequenceDiagram
 
 ---
 
-## 🛡️ 3. DevSecOps 流水线
+## <span id="part-3">🛡️ 3. DevSecOps 流水线</span>
 
 我们在 CI/CD 基础上植入了**质量门禁**与**漏洞扫描**，实现安全左移。
 
@@ -174,7 +174,7 @@ sequenceDiagram
 
 ---
 
-## 🔧 5. 生产级运维手册 (Day 2 Operations)
+## <span id="part-5">🔧 5. 生产级运维手册</span>
 
 ### 5.1 证书轮转 (Certificate Rotation)
 Kubeadm 证书有效期为 1 年，配置 Crontab 自动检查：
@@ -206,7 +206,7 @@ ETCDCTL_API=3 etcdctl snapshot save /backup/etcd-snapshot-$(date +%Y%m%d).db \
 
 ---
 
-## 🚀 6. 部署指南 (Deployment Guide)
+## <span id="part-6">🚀 6. 部署指南</span>
 
 ### 6.1 前置要求
 * **OS**: CentOS 7.9 / Ubuntu 20.04 (Kernel > 4.18)

@@ -88,11 +88,11 @@ graph TD
       
       subgraph "K8s 边缘层"
           NodePort -->|流量转发| Ingress[Nginx Ingress Controller]:::allowed
-          Ingress o-.->|Watch Service变化| API[K8s API Server]:::k8s
+          Ingress o-.->|"Watch Service变化"| API[K8s API Server]:::k8s
       end
       
-      Ingress -->|L7 路由规则| SvcVIP(K8s Service VIP):::k8s
-      SvcVIP -.->|DNAT (iptables/IPVS)| Endpoint[目标 Pod Endpoint]:::allowed
+      Ingress -->|"L7 路由规则"| SvcVIP(K8s Service VIP):::k8s
+      SvcVIP -.->|"DNAT (iptables/IPVS)"| PodEndpoint[目标 Pod Endpoint]:::allowed
   end
 
   subgraph "东西向流量与零信任安全 (East-West & Zero Trust)"
@@ -108,10 +108,10 @@ graph TD
       end
       
       %% 允许的流量：高性能 BGP 路由
-      PodA ==>|Calico BGP 直接路由\n(无 Overlay 隧道封装)| PodB
+      PodA ==>|"Calico BGP 直接路由\n(无 Overlay 隧道封装)"| PodB
       
       %% 被阻断的流量：网络策略
-      PodA -.->|❌ Deny by NetworkPolicy\n(非白名单访问拒绝)| PodC
+      PodA -.->|"❌ Deny by NetworkPolicy\n(非白名单访问拒绝)"| PodC
   end
 
   %% 链接样式调整

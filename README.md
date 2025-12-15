@@ -69,22 +69,37 @@
 | **平台层** | K8s API, Harbor, Jenkins | 提供调度编排、镜像分发、CI/CD 流水线及配置中心能力。 |
 | **基础层** | Kubeadm, Calico, Ceph/NFS | 提供计算资源池化、扁平化容器网络及分布式存储能力。 |
 
-### 2.2 流量治理与网络架构
-摒弃 Overlay 隧道，采用 **Calico BGP** 模式，实现 Pod IP 在 VPC 内可路由，性能损耗 < 3%。
+
+### 2.2 流量治理与网络架构 (Traffic & Network)
+
+网络是 K8s 的命脉。本方案摒弃了传统的 Overlay 隧道封装，采用 **Calico BGP** 模式，实现 Pod IP 在 VPC 内可路由，性能损耗 < 3%。
 
 ```mermaid
 graph TD
+    %% 定义样式
+    classDef allowed fill:#e6f4ea,stroke:#1e8e3e,stroke-width:2px;
+    classDef blocked fill:#fce8e6,stroke:#c5221f,stroke-width:2px,stroke-dasharray: 5 5;
+    classDef infra fill:#f1f3f4,stroke:#9aa0a6,stroke-width:1px;
+    classDef k8s fill:#e8f0fe,stroke:#4285f4,stroke-width:1px;
+
     subgraph "南北向流量 (North-South)"
-        Client[外部用户] -->|HTTPS| SLB[负载均衡器]
-        SLB -->|TCP 80/443| Ingress[Nginx Controller]
-        Ingress -->|Route Rule| Svc[K8s Service]
-        Svc -->|Endpoints| Pod[业务容器]
+        Client[外部用户]:::allowed -->|HTTPS| SLB[负载均衡器]:::infra
+        SLB -->|TCP 80/443| Ingress[Nginx Controller]:::allowed
+        
+        subgraph "K8s Cluster"
+            Ingress -->|"Route Rule"| Svc[K8s Service]:::k8s
+            Svc -->|"Endpoints"| Pod[业务容器]:::allowed
+        end
     end
 
     subgraph "东西向流量 (East-West)"
-        PodA[订单服务] -.->|Direct Route| PodB[库存服务]
-        PodB -.->|NetworkPolicy| PodC[数据库]
+        direction LR
+        PodA[订单服务]:::allowed -.->|"Direct Route"| PodB[库存服务]:::allowed
+        PodB -.->|"❌ Deny (NetworkPolicy)"| PodC[数据库]:::blocked
     end
+
+    %% 关键修复：下面这一行必须加双引号，否则因为有括号 ( ) 会报错
+    Ingress o-.->|"Watch (API Server)"| Svc
 ```
 
 ### 2.3 存储与数据持久化
